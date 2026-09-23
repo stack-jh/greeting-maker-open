@@ -283,10 +283,10 @@
       </div>
 
       <div class="actions">
-        <button class="button primary" id="download" type="button">JPG 이미지 저장</button>
+        <button class="button primary" id="download" type="button">PNG 이미지 저장</button>
         <button class="button secondary" id="reset" type="button">초기화</button>
       </div>
-      <p class="privacy">최대 1080×1350px, 1MB 이하 JPG로 저장됩니다. 모바일에서는 공유창에서 이미지 저장 또는 카카오톡을 선택해 주세요.</p>
+      <p class="privacy">최대 1080×1350px, 1MB 이하 PNG로 저장됩니다. 모바일에서는 공유창에서 이미지 저장 또는 카카오톡을 선택해 주세요.</p>
     </section>
   </main>
 
@@ -501,25 +501,24 @@
       showToast.timer = setTimeout(() => toast.classList.remove('show'), 2200);
     }
 
-    function canvasToBlob(source, quality) {
-      return new Promise(resolve => source.toBlob(resolve, 'image/jpeg', quality));
+    function canvasToPng(source) {
+      return new Promise(resolve => source.toBlob(resolve, 'image/png'));
     }
 
     async function makeCompressedImage(maxBytes = 1024 * 1024) {
-      const qualities = [.92, .86, .80, .74, .68, .60, .52, .44, .36];
       let source = canvas;
       let lastBlob = null;
 
-      for (let scaleAttempt = 0; scaleAttempt < 4; scaleAttempt += 1) {
-        for (const quality of qualities) {
-          lastBlob = await canvasToBlob(source, quality);
-          if (lastBlob && lastBlob.size <= maxBytes) return lastBlob;
-        }
+      for (let scaleAttempt = 0; scaleAttempt < 8; scaleAttempt += 1) {
+        lastBlob = await canvasToPng(source);
+        if (lastBlob && lastBlob.size <= maxBytes) return lastBlob;
 
         const resized = document.createElement('canvas');
         resized.width = Math.round(source.width * .88);
         resized.height = Math.round(source.height * .88);
         const resizedContext = resized.getContext('2d');
+        resizedContext.imageSmoothingEnabled = true;
+        resizedContext.imageSmoothingQuality = 'high';
         resizedContext.fillStyle = '#071a36';
         resizedContext.fillRect(0, 0, resized.width, resized.height);
         resizedContext.drawImage(source, 0, 0, resized.width, resized.height);
@@ -550,13 +549,13 @@
     document.getElementById('download').addEventListener('click', async () => {
       drawCard();
       const safeName = (nameInput.value.trim() || '한가위').replace(/[\\/:*?"<>|]/g, '');
-      const filename = `2026_한가위_감사인사_${safeName}.jpg`;
+      const filename = `2026_한가위_감사인사_${safeName}.png`;
 
       try {
         const blob = await makeCompressedImage();
-        if (!blob || blob.size > 1024 * 1024) throw new Error('JPG 압축 실패');
+        if (!blob || blob.size > 1024 * 1024) throw new Error('PNG 압축 실패');
 
-        const file = new File([blob], filename, { type: 'image/jpeg' });
+        const file = new File([blob], filename, { type: 'image/png' });
         const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
           || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
